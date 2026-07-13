@@ -6,8 +6,13 @@
 
   Design notes:
   - Windows feature install and DC promotion are two separate, idempotent
-    steps. Promotion is guarded with an `unless` check against the NTDS
-    service so re-running highstate after the box is already a DC is a no-op.
+    steps. Promotion is guarded with an `unless` check against
+    Win32_ComputerSystem.DomainRole (>=4 means the box is already a DC) so
+    re-running highstate after the box is already promoted is a no-op.
+    NOTE: don't use `Get-Service NTDS` for this check -- installing the
+    AD-Domain-Services *feature* pre-stages that service entry before any
+    promotion happens, which causes a false positive and silently skips
+    the actual Install-ADDSForest call.
   - Promotion forces -NoRebootOnCompletion so Salt stays in control of the
     reboot (a bare Install-ADDSForest reboot would kill the minion mid-run
     in a way Salt can't observe cleanly).
@@ -16,7 +21,17 @@
     reconnects to confirm convergence and run any post-promotion checks.
 #}
 
-{% set ad = pillar['ad_dc'] %}
+{% set ad = salt['pillar.get']('ad_dc', {}) %}
+
+{% if not ad %}
+missing-ad-dc-pillar:
+  test.fail_without_changes:
+    - name: missing-ad-dc-pillar
+    - comment: >
+        No 'ad_dc' pillar data found for this minion. Check that pillar/top.sls
+        targets this minion ID correctly (run `salt '<minion>' pillar.items` to
+        verify) and that pillar/ad_dc.sls is present in your pillar_roots.
+{% else %}
 
 # ---------------------------------------------------------------------------
 # 1. Install the required Windows roles/features
@@ -69,7 +84,7 @@ promote-new-forest:
           -SkipPreChecks:$true `
           -Force:$true
     - shell: powershell
-    - unless: powershell -Command "if (Get-Service NTDS -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
+    - unless: powershell -Command "if ((Get-WmiObject Win32_ComputerSystem).DomainRole -ge 4) { exit 0 } else { exit 1 }"
     - require:
       - win_servermanager: ad-domain-services-feature
       - win_servermanager: rsat-adds-feature
@@ -98,7 +113,7 @@ promote-additional-dc:
           -SkipPreChecks:$true `
           -Force:$true
     - shell: powershell
-    - unless: powershell -Command "if (Get-Service NTDS -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
+    - unless: powershell -Command "if ((Get-WmiObject Win32_ComputerSystem).DomainRole -ge 4) { exit 0 } else { exit 1 }"
     - require:
       - win_servermanager: ad-domain-services-feature
       - win_servermanager: rsat-adds-feature
@@ -128,6 +143,8 @@ verify-domain-controller:
   cmd.run:
     - name: powershell -Command "Get-ADDomainController -Identity $env:COMPUTERNAME | Format-List"
     - shell: cmd
-    - onlyif: powershell -Command "if (Get-Service NTDS -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
+    - onlyif: powershell -Command "if ((Get-WmiObject Win32_ComputerSystem).DomainRole -ge 4) { exit 0 } else { exit 1 }"
     - require:
       - win_servermanager: ad-domain-services-feature
+
+{% endif %}
