@@ -8,4 +8,6 @@ username: apiuser
 verify_ssl: false
 EOF
 
+st2 pack install https://github.com/martezr/nightlight-lab.git
+
 sudo st2ctl reload --register-configs
