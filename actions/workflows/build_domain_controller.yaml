@@ -52,24 +52,54 @@ tasks:
       #variable_files: ["/stackstorm/vsphere.auto.tfvars"]
       plan_path: /stackstorm/nightlight-lab/terraform/domain_controller
       env: {"TF_CLI_CONFIG_FILE":"/home/stanley/.terraformrc"}
-    # next:
-    #   - when: <% succeeded() %>
-    #     do: output_domain_controller_info
+    next:
+      - when: <% succeeded() %>
+        do: output_domain_controller_info
 
-  # output_consul_cluster_info:
-  #   action: terraform.output
-  #   input:
-  #     plan_path: /stackstorm/orchestration-demos/terraform/consul-cluster
-  #   next:
-  #     - when: <% succeeded() %>
-  #       do: configure_consul_cluster
-  #       publish:
-  #         - ip_address: <% result().result.instance_ip_addr.value %>
-  #         - hostname: <% result().result.vm_hostname.value %>
+  output_domain_controller_info:
+    action: terraform.output
+    input:
+      plan_path: /stackstorm/nightlight-lab/terraform/domain_controller
+      env: {"TF_CLI_CONFIG_FILE":"/home/stanley/.terraformrc"}
+    next:
+      - when: <% succeeded() %>
+        do: rename_computer
+        publish:
+          - ip_address: <% result().result.ip_address.value %>
 
-  # configure_consul_cluster:
-  #   action: bolt.task_run
-  #   input:
-  #     task: package
-  #     params_obj: {"action":"install","name":"nano"}
-  #     nodes: <% ctx().ip_address %>
+  rename_computer:
+    action: core.winrm_ps_cmd
+    input:
+      cmd: 'Rename-Computer -NewName "windc01" -Force -Restart'
+      host: <% ctx().ip_address %>
+      scheme: http
+      timeout: 600
+      port: 5985
+      username: administrator
+      password: Password123#
+    next:
+      - when: <% succeeded() %>
+        do: wait_for_reboot
+
+
+  wait_for_reboot:
+    action: core.pause
+    input:
+      max_pause: 30
+    next:
+      - when: <% succeeded() %>
+        do: bootstrap_salt_minion
+
+  bootstrap_salt_minion:
+    action: core.winrm_ps_cmd
+    input:
+      cmd: '[System.Net.ServicePointManager]::SecurityProtocol =
+        [System.Net.SecurityProtocolType]"Tls12"; Invoke-WebRequest -Uri
+        https://github.com/saltstack/salt-bootstrap/releases/latest/download/bootstrap-salt.ps1
+        -OutFile "$env:TEMP\bootstrap-salt.ps1";'
+      host: <% ctx().ip_address %>
+      scheme: http
+      timeout: 600
+      port: 5985
+      username: administrator
+      password: Password123#

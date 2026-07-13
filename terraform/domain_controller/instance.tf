@@ -14,8 +14,8 @@ data "nightlight_image" "windows2016" {
   name = "win2k16"
 }
 
-output "ip_addresses" {
-  value = nightlight_instance.domain_controller.guest_ip_addresses
+output "primary_ip_addresses" {
+  value = nightlight_instance.domain_controller.guest_ip_addresses[0]
 }
 
 resource "nightlight_instance" "domain_controller" {
