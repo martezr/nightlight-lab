@@ -1,6 +1,6 @@
 version: 1.0
 
-description: A basic workflow that runs an arbitrary linux command.
+description: Domain Controller deployment workflow
 
 input:
   - name
@@ -83,7 +83,6 @@ tasks:
       - when: <% succeeded() %>
         do: wait_for_reboot
 
-
   wait_for_reboot:
     action: core.pause
     input:
@@ -107,3 +106,13 @@ tasks:
       password: Password123#
       transport: ntlm
       verify_ssl_cert: false
+    next:
+      - when: <% succeeded() %>
+        do: configure_domain_controller
+
+  configure_domain_controller:
+    action: salt.local_state.sls
+    input:
+      target: windc01
+      args: [ad_dc]
+      timeout: 900
