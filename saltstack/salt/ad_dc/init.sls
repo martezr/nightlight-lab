@@ -61,63 +61,107 @@ dns-feature:
 # ---------------------------------------------------------------------------
 # 2. Promote the server
 # ---------------------------------------------------------------------------
+# NOTE: promotion is done via a real .ps1 file on disk, executed with -File,
+# rather than passed inline as a multi-line -Command string. Multi-line
+# PowerShell handed to cmd.run via `shell: powershell` can get flattened/
+# mis-quoted on the way to powershell.exe, silently truncating the script
+# after the first statement -- it will report retcode 0 with no output in
+# a couple seconds, having done nothing. Writing a file and running it with
+# -File sidesteps that entirely.
+
 {% if ad.get('first_dc', True) %}
 
 # --- New forest / new domain ---
-promote-new-forest:
-  cmd.run:
-    - name: |
+deploy-promote-forest-script:
+  file.managed:
+    - name: 'C:\Windows\Temp\Promote-ADDSForest.ps1'
+    - makedirs: True
+    - contents: |
         $ErrorActionPreference = 'Stop'
-        $SecurePassword = ConvertTo-SecureString '{{ ad.safe_mode_password }}' -AsPlainText -Force
+        try {
+            $SecurePassword = ConvertTo-SecureString '{{ ad.safe_mode_password }}' -AsPlainText -Force
 
-        Install-ADDSForest `
-          -DomainName '{{ ad.domain_name }}' `
-          -DomainNetbiosName '{{ ad.netbios_name }}' `
-          -ForestMode '{{ ad.forest_mode }}' `
-          -DomainMode '{{ ad.domain_mode }}' `
-          -DatabasePath '{{ ad.database_path }}' `
-          -LogPath '{{ ad.log_path }}' `
-          -SysvolPath '{{ ad.sysvol_path }}' `
-          -SafeModeAdministratorPassword $SecurePassword `
-          -InstallDns:${{ 'true' if ad.get('install_dns', True) else 'false' }} `
-          -NoRebootOnCompletion:$true `
-          -SkipPreChecks:$true `
-          -Force:$true
-    - shell: powershell
-    - unless: powershell -Command "if ((Get-WmiObject Win32_ComputerSystem).DomainRole -ge 4) { exit 0 } else { exit 1 }"
+            Install-ADDSForest `
+              -DomainName '{{ ad.domain_name }}' `
+              -DomainNetbiosName '{{ ad.netbios_name }}' `
+              -ForestMode '{{ ad.forest_mode }}' `
+              -DomainMode '{{ ad.domain_mode }}' `
+              -DatabasePath '{{ ad.database_path }}' `
+              -LogPath '{{ ad.log_path }}' `
+              -SysvolPath '{{ ad.sysvol_path }}' `
+              -SafeModeAdministratorPassword $SecurePassword `
+              -InstallDns:${{ 'true' if ad.get('install_dns', True) else 'false' }} `
+              -NoRebootOnCompletion:$true `
+              -SkipPreChecks:$true `
+              -Force:$true
+
+            Write-Output 'PROMOTION_OK'
+            exit 0
+        }
+        catch {
+            Write-Error $_.Exception.ToString()
+            exit 1
+        }
     - require:
       - win_servermanager: ad-domain-services-feature
       - win_servermanager: rsat-adds-feature
       - win_servermanager: rsat-ad-powershell-feature
+
+promote-new-forest:
+  cmd.run:
+    - name: 'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\Windows\Temp\Promote-ADDSForest.ps1"'
+    - shell: cmd
+    - timeout: 1800
+    - unless: powershell -Command "if ((Get-WmiObject Win32_ComputerSystem).DomainRole -ge 4) { exit 0 } else { exit 1 }"
+    - require:
+      - file: deploy-promote-forest-script
 
 {% else %}
 
 # --- Additional DC joining an existing domain/forest ---
-promote-additional-dc:
-  cmd.run:
-    - name: |
+deploy-promote-dc-script:
+  file.managed:
+    - name: 'C:\Windows\Temp\Promote-ADDSDomainController.ps1'
+    - makedirs: True
+    - contents: |
         $ErrorActionPreference = 'Stop'
-        $SafePassword = ConvertTo-SecureString '{{ ad.safe_mode_password }}' -AsPlainText -Force
-        $AdminPassword = ConvertTo-SecureString '{{ ad.existing_domain_admin_password }}' -AsPlainText -Force
-        $Cred = New-Object System.Management.Automation.PSCredential('{{ ad.existing_domain_admin }}', $AdminPassword)
+        try {
+            $SafePassword = ConvertTo-SecureString '{{ ad.safe_mode_password }}' -AsPlainText -Force
+            $AdminPassword = ConvertTo-SecureString '{{ ad.existing_domain_admin_password }}' -AsPlainText -Force
+            $Cred = New-Object System.Management.Automation.PSCredential('{{ ad.existing_domain_admin }}', $AdminPassword)
 
-        Install-ADDSDomainController `
-          -DomainName '{{ ad.domain_name }}' `
-          -Credential $Cred `
-          -DatabasePath '{{ ad.database_path }}' `
-          -LogPath '{{ ad.log_path }}' `
-          -SysvolPath '{{ ad.sysvol_path }}' `
-          -SafeModeAdministratorPassword $SafePassword `
-          -InstallDns:${{ 'true' if ad.get('install_dns', True) else 'false' }} `
-          -NoRebootOnCompletion:$true `
-          -SkipPreChecks:$true `
-          -Force:$true
-    - shell: powershell
-    - unless: powershell -Command "if ((Get-WmiObject Win32_ComputerSystem).DomainRole -ge 4) { exit 0 } else { exit 1 }"
+            Install-ADDSDomainController `
+              -DomainName '{{ ad.domain_name }}' `
+              -Credential $Cred `
+              -DatabasePath '{{ ad.database_path }}' `
+              -LogPath '{{ ad.log_path }}' `
+              -SysvolPath '{{ ad.sysvol_path }}' `
+              -SafeModeAdministratorPassword $SafePassword `
+              -InstallDns:${{ 'true' if ad.get('install_dns', True) else 'false' }} `
+              -NoRebootOnCompletion:$true `
+              -SkipPreChecks:$true `
+              -Force:$true
+
+            Write-Output 'PROMOTION_OK'
+            exit 0
+        }
+        catch {
+            Write-Error $_.Exception.ToString()
+            exit 1
+        }
     - require:
       - win_servermanager: ad-domain-services-feature
       - win_servermanager: rsat-adds-feature
       - win_servermanager: rsat-ad-powershell-feature
+
+promote-additional-dc:
+  cmd.run:
+    - name: 'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\Windows\Temp\Promote-ADDSDomainController.ps1"'
+    - shell: cmd
+    - timeout: 1800
+    - unless: powershell -Command "if ((Get-WmiObject Win32_ComputerSystem).DomainRole -ge 4) { exit 0 } else { exit 1 }"
+    - require:
+      - file: deploy-promote-dc-script
 
 {% endif %}
 
