@@ -77,6 +77,8 @@ tasks:
       port: 5985
       username: administrator
       password: Password123#
+      transport: ntlm
+      verify_ssl_cert: false
     next:
       - when: <% succeeded() %>
         do: wait_for_reboot
@@ -93,13 +95,15 @@ tasks:
   bootstrap_salt_minion:
     action: core.winrm_ps_cmd
     input:
-      cmd: '[System.Net.ServicePointManager]::SecurityProtocol =
-        [System.Net.SecurityProtocolType]"Tls12"; Invoke-WebRequest -Uri
-        https://github.com/saltstack/salt-bootstrap/releases/latest/download/bootstrap-salt.ps1
-        -OutFile "$env:TEMP\bootstrap-salt.ps1";'
+      cmd: |
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Tls12';
+        Invoke-WebRequest -Uri https://github.com/saltstack/salt-bootstrap/releases/latest/download/bootstrap-salt.ps1 -OutFile "$env:TEMP\bootstrap-salt.ps1";
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; & "$env:TEMP\bootstrap-salt.ps1" -Master 192.168.128.103
       host: <% ctx().ip_address %>
       scheme: http
       timeout: 600
       port: 5985
       username: administrator
       password: Password123#
+      transport: ntlm
+      verify_ssl_cert: false
