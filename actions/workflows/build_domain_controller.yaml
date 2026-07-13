@@ -20,6 +20,7 @@ tasks:
       source: https://github.com/martezr/nightlight-lab.git
       destination: /tmp/nightlight-lab
       hosts: localhost
+      ref: main
     next:
       - when: <% succeeded() %>
         do: provision_domain_controller
