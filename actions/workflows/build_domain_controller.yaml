@@ -9,7 +9,7 @@ tasks:
   cleanup_git_repo:
     action: core.local
     input:
-      cmd: "[ -d /tmp/nightlight-lab ] && sudo rm -rf /tmp/nightlight-lab || true"
+      cmd: "if [ -d /stackstorm/nightlight-lab ]; then sudo rm -rf /stackstorm/nightlight-lab; fi"
     next:
       - when: <% succeeded() %>
         do: clone_build_repo
@@ -18,7 +18,7 @@ tasks:
     action: git.clone
     input:
       source: https://github.com/martezr/nightlight-lab.git
-      destination: /tmp/nightlight-lab
+      destination: /stackstorm/nightlight-lab
       hosts: localhost
       ref: main
     next:
@@ -29,7 +29,7 @@ tasks:
     action: terraform.pipeline
     input:
       #variable_files: ["/stackstorm/vsphere.auto.tfvars"]
-      plan_path: /tmp/nightlight-lab/terraform/demo
+      plan_path: /stackstorm/nightlight-lab/terraform/demo
       backend: {"path":"/tmp/terraform.tfstate"}
     # next:
     #   - when: <% succeeded() %>
