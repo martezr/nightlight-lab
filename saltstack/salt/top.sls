@@ -1,3 +1,3 @@
 base:
-  'dc01*':
+  'windc*':
     - ad_dc
