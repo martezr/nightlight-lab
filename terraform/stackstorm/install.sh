@@ -24,17 +24,32 @@ export PATH="/usr/local/go/bin:$PATH"
 echo 'export PATH="/usr/local/go/bin:$PATH"' >> ~/.bashrc
 
 # Build the nightlight Terraform provider and configure dev_overrides
-GOBIN="$(go env GOPATH)/bin"
+export GOBIN=/stackstorm
 
 git clone https://github.com/martezr/terraform-provider-nightlight.git /tmp/terraform-provider-nightlight
 cd /tmp/terraform-provider-nightlight
 go install .
 
-cat <<EOF > ~/.terraformrc
+cat <<EOF > /home/stanley/.terraformrc
 provider_installation {
-  dev_overrides {
-    "martezr/nightlight" = "${GOBIN}"
+  filesystem_mirror {
+    path    = "/home/stanley/.terraform.d/plugins"
+    include = ["martezr/nightlight"]
   }
-  direct {}
+
+  direct {
+    exclude = ["martezr/nightlight"]
+  }
 }
 EOF
+
+mkdir -p /home/stanley/.terraform.d/plugins/registry.terraform.io/martezr/nightlight/0.1.0/linux_amd64
+cp /root/go/bin/terraform-provider-nightlight /home/stanley/.terraform.d/plugins/registry.terraform.io/martezr/nightlight/0.1.0/linux_amd64/terraform-provider-nightlight_v1.0.0
+
+cp /home/stanley/.terraformrc /root/.terraformrc
+echo 'export TF_CLI_CONFIG_FILE=/home/stanley/.terraformrc' > /etc/profile.d/terraform.sh
+chmod +x /etc/profile.d/terraform.sh
+
+# Remove any stale lock files so Terraform uses the dev_override instead of the registry
+find /stackstorm -name ".terraform.lock.hcl" -delete
+find /stackstorm -name ".terraform" -type d -exec rm -rf {} +
