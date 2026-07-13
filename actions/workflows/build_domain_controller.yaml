@@ -9,7 +9,7 @@ tasks:
   cleanup_git_repo:
     action: linux.rm
     input:
-      target: /stackstorm/orchestration-demos
+      target: /stackstorm/nightlight-lab
       recursive: True
       sudo: True
       hosts: localhost
@@ -20,37 +20,37 @@ tasks:
   clone_build_repo:
     action: git.clone
     input:
-      source: https://github.com/martezr/orchestration-demos.git
-      destination: /stackstorm/orchestration-demos
+      source: https://github.com/martezr/nightlight-lab.git
+      destination: /stackstorm/nightlight-lab
       hosts: localhost
     next:
       - when: <% succeeded() %>
         do: provision_consul_cluster
 
-  provision_consul_cluster:
-    action: terraform.pipeline
-    input:
-      variable_files: ["/stackstorm/vsphere.auto.tfvars"]
-      plan_path: /stackstorm/orchestration-demos/terraform/consul-cluster
-      backend: {"path":"/stackstorm/terraform.tfstate"}
-    next:
-      - when: <% succeeded() %>
-        do: output_consul_cluster_info
+  # provision_consul_cluster:
+  #   action: terraform.pipeline
+  #   input:
+  #     variable_files: ["/stackstorm/vsphere.auto.tfvars"]
+  #     plan_path: /stackstorm/orchestration-demos/terraform/consul-cluster
+  #     backend: {"path":"/stackstorm/terraform.tfstate"}
+  #   next:
+  #     - when: <% succeeded() %>
+  #       do: output_consul_cluster_info
 
-  output_consul_cluster_info:
-    action: terraform.output
-    input:
-      plan_path: /stackstorm/orchestration-demos/terraform/consul-cluster
-    next:
-      - when: <% succeeded() %>
-        do: configure_consul_cluster
-        publish:
-          - ip_address: <% result().result.instance_ip_addr.value %>
-          - hostname: <% result().result.vm_hostname.value %>
+  # output_consul_cluster_info:
+  #   action: terraform.output
+  #   input:
+  #     plan_path: /stackstorm/orchestration-demos/terraform/consul-cluster
+  #   next:
+  #     - when: <% succeeded() %>
+  #       do: configure_consul_cluster
+  #       publish:
+  #         - ip_address: <% result().result.instance_ip_addr.value %>
+  #         - hostname: <% result().result.vm_hostname.value %>
 
-  configure_consul_cluster:
-    action: bolt.task_run
-    input:
-      task: package
-      params_obj: {"action":"install","name":"nano"}
-      nodes: <% ctx().ip_address %>
+  # configure_consul_cluster:
+  #   action: bolt.task_run
+  #   input:
+  #     task: package
+  #     params_obj: {"action":"install","name":"nano"}
+  #     nodes: <% ctx().ip_address %>

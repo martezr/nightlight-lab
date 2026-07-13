@@ -55,7 +55,7 @@ fileserver_backend:
   - roots
   - gitfs
 
-gitfs_provider: pygit2
+gitfs_provider: gitpython
 gitfs_remotes:
   - https://github.com/martezr/nightlight-lab.git:
       - base: main
