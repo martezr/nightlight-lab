@@ -1,0 +1,48 @@
+core:
+  config:
+    bootstrap:
+      # Management networks shared by hosts
+      management_cidr: 192.168.128.0/24
+      # Example:
+      # management_cidr: 192.168.29.0/24
+
+    # Enter database toplogy: single/multi (cannot be changed later)
+    # This will configure number of databases, single for entire cluster or multiple databases with one per openstack service.
+    database: single
+
+    # Enter a region name (cannot be changed later)
+    region: RegionOne
+    # Example:
+    # region: RegionOne
+    k8s-addons:
+      loadbalancer: 192.168.128.210-192.168.128.219
+
+    proxy:
+      proxy_required: false
+
+    # External networking
+    external-networks:
+      physnet1:
+        nics:
+          openstack01.rmslab.net: enp2s0
+        # CIDR of OpenStack external network
+        cidr: 192.168.129.0/24
+        # IP address of default gateway for external network
+        gateway: 192.168.129.1
+        # External network's allocation range
+        range: 192.168.129.201-192.168.129.210
+        # Network type for access to external network
+        network_type: flat
+
+    # MicroCeph
+    microceph_config:
+      # Disks to attach to MicroCeph nodes
+      openstack01.rmslab.net:
+        osd_devices: /dev/vdb
+        dangerous_i_acknowledge_i_will_lose_data_wipe_disks: true
+
+    # Configure OVS DPDK datapath (userspace), improving network performance.
+    dpdk:
+      # If enabled, OVS bridges are configured to use the netdev (DPDK) datapath
+      # instead of the standard system datapath.
+      enabled: false

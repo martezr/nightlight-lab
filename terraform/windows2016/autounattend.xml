@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  autounattend-bios.xml
+  Target: Windows Server 2016 Datacenter (Desktop Experience / GUI)
+  Layout: Single disk, Legacy BIOS/MBR, wipes Disk 0 and installs to a single C: partition
+
+  This is the Legacy BIOS/MBR counterpart to the UEFI/GPT autounattend.xml.
+  Use this one if the target machine boots in Legacy BIOS / CSM mode rather than UEFI.
+
+  BEFORE USE:
+  - Change ComputerName, AdministratorPassword, TimeZone, RegisteredOrganization to your values.
+  - The ProductKey below is Microsoft's public generic KMS client key (GVLK) for Server 2016
+    Datacenter. It only works for KMS activation against a KMS host / AD-based activation.
+    If you don't use KMS, replace it with your MAK/retail key, or remove the <ProductKey> block
+    entirely and enter the key manually during setup.
+  - This wipes the entire Disk 0. Double-check you're booting the right target disk.
+  - Save this file as "autounattend.xml" (exact name) at the root of your install USB/ISO,
+    or in the root of a separate USB stick plugged in alongside the install media.
+-->
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+
+  <!-- ===================== windowsPE pass ===================== -->
+  <settings pass="windowsPE">
+    <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <SetupUILanguage>
+        <UILanguage>en-US</UILanguage>
+      </SetupUILanguage>
+      <InputLocale>en-US</InputLocale>
+      <SystemLocale>en-US</SystemLocale>
+      <UILanguage>en-US</UILanguage>
+      <UserLocale>en-US</UserLocale>
+    </component>
+
+    <!--
+      Loads the VirtIO Block storage driver during Setup itself, before disk partitioning.
+      Without this, Setup can't see a disk attached as VirtIO Block (bus="virtio", dev="vda")
+      at all, and the DiskConfiguration step below will fail with no usable disk found.
+      Adjust the path if your virtio-win ISO layout or drive letter differs.
+    -->
+    <component name="Microsoft-Windows-PnpCustomizationsWinPE" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <DriverPaths>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="1">
+          <Path>E:\viostor\2k16\amd64</Path>
+        </PathAndCredentials>
+      </DriverPaths>
+    </component>
+
+    <component name="Microsoft-Windows-Setup" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+      <DiskConfiguration>
+        <Disk wcm:action="add">
+          <DiskID>0</DiskID>
+          <WillWipeDisk>true</WillWipeDisk>
+          <CreatePartitions>
+            <!-- System Reserved (boot) partition -->
+            <CreatePartition wcm:action="add">
+              <Order>1</Order>
+              <Type>Primary</Type>
+              <Size>350</Size>
+            </CreatePartition>
+            <!-- Windows partition: takes the rest of the disk -->
+            <CreatePartition wcm:action="add">
+              <Order>2</Order>
+              <Type>Primary</Type>
+              <Extend>true</Extend>
+            </CreatePartition>
+          </CreatePartitions>
+          <ModifyPartitions>
+            <ModifyPartition wcm:action="add">
+              <Order>1</Order>
+              <PartitionID>1</PartitionID>
+              <Label>System Reserved</Label>
+              <Format>NTFS</Format>
+              <Active>true</Active>
+            </ModifyPartition>
+            <ModifyPartition wcm:action="add">
+              <Order>2</Order>
+              <PartitionID>2</PartitionID>
+              <Label>Windows</Label>
+              <Format>NTFS</Format>
+              <Letter>C</Letter>
+            </ModifyPartition>
+          </ModifyPartitions>
+        </Disk>
+        <WillShowUI>OnError</WillShowUI>
+      </DiskConfiguration>
+
+      <ImageInstall>
+        <OSImage>
+          <InstallFrom>
+            <!--
+              Selecting by image NAME is more reliable than by index, since index
+              numbering can vary between ISOs. This targets the Desktop Experience
+              (GUI) edition of Datacenter, not the Core edition.
+            -->
+            <MetaData wcm:action="add">
+              <Key>/IMAGE/INDEX</Key>
+              <Value>4</Value>
+            </MetaData>
+            <!-- Index 4 = "Windows Server 2016 Datacenter Evaluation (Desktop Experience)"
+                 confirmed via: dism /Get-WimInfo /WimFile:D:\sources\install.wim
+                 NOTE: this is Evaluation media. If you later use retail/VLSC media instead,
+                 the image names differ (e.g. "Windows Server 2016 SERVERDATACENTER") and
+                 indices may differ too — re-run Get-WimInfo against that media to confirm. -->
+          </InstallFrom>
+          <InstallTo>
+            <DiskID>0</DiskID>
+            <PartitionID>2</PartitionID>
+          </InstallTo>
+          <WillShowUI>OnError</WillShowUI>
+        </OSImage>
+      </ImageInstall>
+
+      <UserData>
+        <AcceptEula>true</AcceptEula>
+        <!-- No ProductKey here on purpose: this is Evaluation media, which doesn't take a
+             retail/volume GVLK. Including a mismatched key can make Setup filter out every
+             image in the WIM, which shows up as "no images available". If you switch to
+             retail/VLSC media later, add a <ProductKey> block back in with the correct GVLK
+             for that SKU. -->
+      </UserData>
+
+    </component>
+  </settings>
+
+  <!-- ===================== specialize pass ===================== -->
+  <settings pass="specialize">
+    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <ComputerName>${hostname}</ComputerName>
+      <TimeZone>Central Standard Time</TimeZone>
+    </component>
+
+    <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <InputLocale>en-US</InputLocale>
+      <SystemLocale>en-US</SystemLocale>
+      <UILanguage>en-US</UILanguage>
+      <UserLocale>en-US</UserLocale>
+    </component>
+
+    <!--
+      Installs the rest of the VirtIO driver set into the final OS (not just WinPE).
+      viostor is included again here too so the installed system keeps the driver
+      after first boot, not only during Setup. Remove any lines for devices your
+      VM doesn't actually use. Folder names assume the standard virtio-win ISO layout
+      under E:\<driver>\2k16\amd64 — adjust if yours differs.
+    -->
+    <component name="Microsoft-Windows-PnpCustomizationsNonWinPE" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <DriverPaths>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="1">
+          <Path>E:\viostor\2k16\amd64</Path>
+        </PathAndCredentials>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="2">
+          <Path>E:\NetKVM\2k16\amd64</Path>
+        </PathAndCredentials>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="3">
+          <Path>E:\Balloon\2k16\amd64</Path>
+        </PathAndCredentials>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="4">
+          <Path>E:\qxldod\2k16\amd64</Path>
+        </PathAndCredentials>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="5">
+          <Path>E:\vioserial\2k16\amd64</Path>
+        </PathAndCredentials>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="6">
+          <Path>E:\pvpanic\2k16\amd64</Path>
+        </PathAndCredentials>
+      </DriverPaths>
+    </component>
+  </settings>
+  <settings pass="oobeSystem">
+    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+      <OOBE>
+        <HideEULAPage>true</HideEULAPage>
+        <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <NetworkLocation>Work</NetworkLocation>
+        <ProtectYourPC>3</ProtectYourPC>
+      </OOBE>
+
+      <UserAccounts>
+        <AdministratorPassword>
+          <!-- CHANGE THIS before deploying. Plain text here only because Setup
+               encrypts/obfuscates it at first boot; still treat this file as sensitive. -->
+          <Value>Password123#</Value>
+          <PlainText>true</PlainText>
+        </AdministratorPassword>
+      </UserAccounts>
+
+      <!--
+        AutoLogon makes Windows log on as Administrator automatically, once, right after
+        Setup finishes — which is what actually triggers FirstLogonCommands to run. Without
+        this, the commands below just sit there waiting for someone to log on manually.
+        LogonCount=1 is enough since nothing below this forces a reboot; bump it to 2-3 only
+        if you add something that does. Windows clears the autologon registry value itself
+        once LogonCount is exhausted, so this doesn't leave the box auto-logging-in forever.
+      -->
+      <AutoLogon>
+        <Password>
+          <Value>Password123#</Value>
+          <PlainText>true</PlainText>
+        </Password>
+        <Enabled>true</Enabled>
+        <LogonCount>1</LogonCount>
+        <Username>Administrator</Username>
+      </AutoLogon>
+
+      <TimeZone>Central Standard Time</TimeZone>
+      <RegisteredOrganization>MyOrg</RegisteredOrganization>
+      <RegisteredOwner>Administrator</RegisteredOwner>
+
+      <!-- Optional convenience: enable Remote Desktop on first logon -->
+      <FirstLogonCommands>
+        <SynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <CommandLine>cmd /c reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f</CommandLine>
+          <Description>Enable Remote Desktop</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <CommandLine>netsh advfirewall firewall set rule group="remote desktop" new enable=yes</CommandLine>
+          <Description>Allow RDP through firewall</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <CommandLine>E:\virtio-win-guest-tools.exe /install /quiet /norestart /log C:\virtio-tools-install.log</CommandLine>
+          <Description>Install VirtIO guest tools (QEMU Guest Agent, Spice agent, drivers)</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>4</Order>
+          <CommandLine>powershell -ExecutionPolicy Bypass -Command "iex (irm http://169.254.169.253/install-agent.ps1)"</CommandLine>
+          <Description>Install Nightlight Cloud agent</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>5</Order>
+          <CommandLine>powershell -ExecutionPolicy Bypass -Command "winrm quickconfig -q; winrm set winrm/config/service '@{AllowUnencrypted=true}'; winrm set winrm/config/service/auth '@{Basic=true}'; netsh advfirewall firewall add rule name='WinRM HTTP' protocol=TCP dir=in localport=5985 action=allow"</CommandLine>
+          <Description>Configure WinRM for Ansible remote management</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>6</Order>
+          <CommandLine>cmd /c "C:\Program Files\Nightlight\nightlight-agent.exe" sysprep</CommandLine>
+          <Description>Run Nightlight agent sysprep</Description>
+        </SynchronousCommand>
+      </FirstLogonCommands>
+    </component>
+  </settings>
+
+</unattend>
