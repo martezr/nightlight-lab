@@ -87,7 +87,7 @@ tasks:
   wait_for_reboot:
     action: core.pause
     input:
-      max_pause: 30
+      max_pause: 60
     next:
       - when: <% succeeded() %>
         do: bootstrap_salt_minion
@@ -98,7 +98,7 @@ tasks:
       cmd: |
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Tls12';
         Invoke-WebRequest -Uri https://github.com/saltstack/salt-bootstrap/releases/latest/download/bootstrap-salt.ps1 -OutFile "$env:TEMP\bootstrap-salt.ps1";
-        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; & "$env:TEMP\bootstrap-salt.ps1" -Master 192.168.128.103
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; & "$env:TEMP\bootstrap-salt.ps1" -Master 192.168.128.103 -Minion windc01
       host: <% ctx().ip_address %>
       scheme: http
       timeout: 600
