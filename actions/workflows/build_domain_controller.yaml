@@ -7,12 +7,9 @@ input:
 
 tasks:
   cleanup_git_repo:
-    action: linux.rm
+    action: core.local
     input:
-      target: /stackstorm/nightlight-lab
-      recursive: True
-      sudo: True
-      hosts: localhost
+      cmd: "[ -d /stackstorm/nightlight-lab ] && sudo rm -rf /stackstorm/nightlight-lab || true"
     next:
       - when: <% succeeded() %>
         do: clone_build_repo
