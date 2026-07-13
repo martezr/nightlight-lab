@@ -59,10 +59,25 @@ gitfs_provider: gitpython
 gitfs_remotes:
   - https://github.com/martezr/nightlight-lab.git:
       - base: main
-      - root: saltstack
+      - root: saltstack/salt
       - mountpoint: salt://
 
 gitfs_update_interval: 120
+
+# --- Pillar ---
+# git_pillar is a separate subsystem from gitfs. gitfs only serves state
+# files under salt://; it has no effect on pillar data. This block is what
+# actually exposes pillar from the repo.
+
+git_pillar_provider: gitpython
+git_pillar_update_interval: 120
+
+ext_pillar:
+  - git:
+    - main https://github.com/martezr/nightlight-lab.git:
+      - root: saltstack/pillar
+      - name: nightlight-lab-pillar
+      - env: base
 EOF
 
 sudo systemctl restart salt-master
