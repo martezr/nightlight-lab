@@ -65,7 +65,7 @@ tasks:
       - when: <% succeeded() %>
         do: rename_computer
         publish:
-          - ip_address: <% result().result.ip_address.value %>
+          - ip_address: <% result().result.primary_ip_address.value %>
 
   rename_computer:
     action: core.winrm_ps_cmd
