@@ -44,7 +44,7 @@ tasks:
       env: {"TF_CLI_CONFIG_FILE":"/home/stanley/.terraformrc"}
     next:
       - when: <% succeeded() %>
-        do: provision_domain_controller_terraform_plan
+        do: provision_domain_controller_terraform_apply
 
   provision_domain_controller_terraform_apply:
     action: terraform.apply
