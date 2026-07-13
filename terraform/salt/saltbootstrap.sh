@@ -57,9 +57,9 @@ fileserver_backend:
 
 gitfs_provider: pygit2
 gitfs_remotes:
-  - http://10.0.0.78:8080/git/tftest.git:
+  - https://github.com/martezr/nightlight-lab.git:
       - base: main
-      - root: states
+      - root: saltstack
       - mountpoint: salt://
 
 gitfs_update_interval: 120
