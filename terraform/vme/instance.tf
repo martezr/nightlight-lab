@@ -73,7 +73,7 @@ resource "nightlight_instance" "vme" {
       boot_order   = 3
       bridge_name  = data.nightlight_site.example.bridges[0]
       subnet_id    = data.nightlight_subnet.management.id
-      model        = "virtio"
+      model        = "e1000"
       connected    = true
     }
     # {
