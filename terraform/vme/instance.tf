@@ -16,15 +16,30 @@ data "nightlight_subnet" "compute" {
 }
 
 data "nightlight_image" "vme" {
-  name = "HPE_VM_Essentials_SW_image_v9.0.0_S5Q83-11075.iso"
+  name = local.vme_images[local.vme_version].iso
 }
+
+locals {
+  vme_version = "9.0.0"
+  vme_images = {
+    "8.1.2" = {
+      iso   = "HPE_VM_Essentials_SW_image_v8.1.2_S5Q83-11075.iso"
+      qcow2 = "hpe-vm-essentials-8.1.2-1.qcow2.gz"
+    }
+    "9.0.0" = {
+      iso   = "HPE_VM_Essentials_SW_image_v9.0.0_S5Q83-11075.iso"
+      qcow2 = "hpe-vm-essentials-9.0.0-1.qcow2.gz"
+    }
+  }
+}
+
 
 resource "nightlight_instance" "vme" {
   name         = "vme01"
   description  = "HPE Morpheus VM Essentials"
   cpu_cores    = 8
   cpu_sockets  = 2
-  memory_mb    = 32768
+  memory_mb    = 49152
   datastore_id = "defaultdatastore"
   user_data = templatefile("${path.module}/userdata.sh", {
     hostname = "vme01"
@@ -35,7 +50,7 @@ resource "nightlight_instance" "vme" {
   cdroms = [
     {
       index_number = 0
-      boot_order   = 3
+      boot_order   = 2
       connected    = true
       path         = data.nightlight_image.vme.path
     }
@@ -45,24 +60,17 @@ resource "nightlight_instance" "vme" {
     {
       index_number  = 0
       boot_order    = 1
-      size_gb       = 100
+      size_gb       = 250
       bus_type      = "virtio"
       datastore_id  = "defaultdatastore"
       existing_path = data.nightlight_image.ubuntu24.path
-    },
-    {
-      index_number = 1
-      boot_order   = 2
-      size_gb      = 200
-      bus_type     = "virtio"
-      datastore_id = "defaultdatastore"
     }
   ]
 
   network_interfaces = [
     {
       index_number = 0
-      boot_order   = 4
+      boot_order   = 3
       bridge_name  = data.nightlight_site.example.bridges[0]
       subnet_id    = data.nightlight_subnet.management.id
       model        = "virtio"
@@ -100,7 +108,7 @@ resource "nightlight_instance" "vme" {
     inline = [
       "sudo apt-get update -y",
       "sudo mkdir /mnt/demo && sudo mount /dev/sr0 /mnt/demo && sudo apt install -y -f /mnt/demo/hpe-vm*.deb",
-      "sudo chmod +x /home/mreed/bootstrap.sh && sudo /home/mreed/bootstrap.sh hpe-vm-essentials-9.0.0-1.qcow2.gz"
+      "sudo chmod +x /home/mreed/bootstrap.sh && sudo /home/mreed/bootstrap.sh ${local.vme_images[local.vme_version].qcow2}"
     ]
   }
 }

@@ -1,0 +1,11 @@
+---
+name: build_vme
+description: A workflow demonstrating how to rollback and retry.
+runner_type: orquesta
+entry_point: workflows/build_vme.yaml
+enabled: true
+parameters:
+  vme_version:
+    required: true
+    type: string
+    default: 9.0.0

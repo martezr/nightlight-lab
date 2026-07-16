@@ -54,7 +54,7 @@ resource "hpe_morpheus_cluster" "example_hvm" {
     ssh_port                 = 22
     ssh_username             = "mreed"
     ssh_password_wo          = "Password123#"
-    management_net_interface = "enp1s0"
+    management_net_interface = "ens1"
 
     ssh_hosts = [
       {

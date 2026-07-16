@@ -79,7 +79,7 @@ resource "nightlight_instance" "stackstorm" {
   # Step 1: Upload the manifest.yaml file to the remote instance
   provisioner "file" {
     source = "${path.module}/install.sh"
-    destination = "/home/mreed/openstackbootstrap.sh"
+    destination = "/home/mreed/install.sh"
   }
 
   # Step 2: Run shell commands over the established SSH tunnel
