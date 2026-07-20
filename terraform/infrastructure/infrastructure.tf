@@ -100,11 +100,10 @@ resource "nightlight_image" "ubuntu22" {
 }
 
 resource "nightlight_content_library" "base_images" {
-  name          = "Base Images"
+  name          = "demo"
   description   = "Base images for provisioning"
-  depot_url     = "http://10.0.0.78:8080"
+  depot_url     = "http://10.0.0.173:8080"
   datastore_id  = "defaultdatastore"
-  depot_token   = "606d92af-9263-45f1-9df3-b88d5d9d89f2"
+  depot_token   = "ad5182d9-c45c-488d-9e1d-ad716f4e45ff"
   sync_interval = "manual"
-
 }
