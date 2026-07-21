@@ -13,7 +13,7 @@ sudo /usr/bin/hpe-vm --install \
     -U rmadmin \
     -P "Password123#" \
     -u https://192.168.128.243 \
-    -i enp1s0 \
+    -i ens1 \
     -q /mnt/demo/$QCOW2_FILE \
     -d &
 
