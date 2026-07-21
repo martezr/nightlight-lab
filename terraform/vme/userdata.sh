@@ -70,7 +70,7 @@ write_files:
       network:
         version: 2
         ethernets:
-          enp1s0:
+          ens1:
             dhcp4: false
             addresses:
               - {{ds.meta_data.local_ipv4 }}/24
@@ -95,7 +95,7 @@ runcmd:
 network:
   version: 2
   ethernets:
-    enp1s0:
+    ens1:
       dhcp4: false
       addresses: [{{ds.meta_data.local_ipv4 }}/24]
       gateway4: {{ ds.meta_data.network.interfaces.macs[ds.meta_data.mac]['gateway-ipv4'] }}
