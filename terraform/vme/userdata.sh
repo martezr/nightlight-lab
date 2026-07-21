@@ -33,11 +33,11 @@ apt:
 
   primary:
     - arches: [default]
-      uri: http://10.0.0.78:8080/packages/ubuntu/
+      uri: http://10.0.0.173:8080/packages/ubuntu/
 
   security:
     - arches: [default]
-      uri: http://10.0.0.78:8080/packages/ubuntu-security/
+      uri: http://10.0.0.173:8080/packages/ubuntu-security/
 
 # Update and upgrade packages on first boot
 package_update: true
