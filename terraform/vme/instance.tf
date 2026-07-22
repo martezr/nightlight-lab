@@ -39,7 +39,7 @@ resource "nightlight_instance" "vme" {
   description  = "HPE Morpheus VM Essentials"
   cpu_cores    = 8
   cpu_sockets  = 2
-  memory_mb    = 49152
+  memory_mb    = 98304
   datastore_id = "defaultdatastore"
   user_data = templatefile("${path.module}/userdata.sh", {
     hostname = "vme01"
