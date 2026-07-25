@@ -78,7 +78,7 @@ resource "nightlight_instance" "vme" {
     },
     {
       index_number = 1
-      boot_order   = 5
+      boot_order   = 4
       bridge_name  = data.nightlight_site.east.bridges[0]
       subnet_id    = data.nightlight_subnet.compute.id
       model        = "e1000"
