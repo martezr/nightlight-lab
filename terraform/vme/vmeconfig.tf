@@ -10,7 +10,7 @@ resource "hpe_morpheus_cloud" "example" {
   tenant_id  = 1
   group_id   = hpe_morpheus_group.rmslab.id
   enabled    = true
-  location   = "somewhere"
+  location   = "us-east-1"
   visibility = "public"
 
   agent_install_mode       = "ssh"
@@ -47,6 +47,8 @@ resource "hpe_morpheus_cluster" "example_hvm" {
     cpu_arch          = "x86_64"
     cpu_model         = "host-model"
     power_policy      = "performance"
+    compute_interface_name = "ens2"
+    compute_vlans = "2"
   }
 
   server = {
@@ -54,7 +56,7 @@ resource "hpe_morpheus_cluster" "example_hvm" {
     ssh_port                 = 22
     ssh_username             = "mreed"
     ssh_password_wo          = "Password123#"
-    management_net_interface = "ens1"
+    management_net_interface = "ens1"    
 
     ssh_hosts = [
       {
