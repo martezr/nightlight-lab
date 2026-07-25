@@ -14,8 +14,6 @@ sudo /usr/bin/hpe-vm --install \
     -P "Password123#" \
     -u https://192.168.128.243 \
     -i ens1 \
-    -c ens2 \
-    -v 2 \
     -q /mnt/demo/$QCOW2_FILE \
     -d &
 
