@@ -46,6 +46,7 @@ while (( ATTEMPT <= MAX_ATTEMPTS )); do
         "password": "Password123#"
         }
         '
+        sleep 30
         exit 0
     else
         echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: $URL not responding yet. Retrying in $SLEEP_SECONDS seconds..."
