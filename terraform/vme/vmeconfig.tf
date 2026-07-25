@@ -47,8 +47,6 @@ resource "hpe_morpheus_cluster" "example_hvm" {
     cpu_arch          = "x86_64"
     cpu_model         = "host-model"
     power_policy      = "performance"
-    compute_interface_name = "ens2"
-    compute_vlans = "2"
   }
 
   server = {
