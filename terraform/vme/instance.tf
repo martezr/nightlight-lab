@@ -3,7 +3,7 @@ data "nightlight_image" "ubuntu24" {
   name = "Ubuntu 24.04 LTS"
 }
 
-data "nightlight_site" "example" {
+data "nightlight_site" "east" {
   name = "us-east-1"
 }
 
@@ -45,7 +45,7 @@ resource "nightlight_instance" "vme" {
     hostname = "vme01"
     fqdn     = "vme01.rmslab.net"
   })
-  site_id       = data.nightlight_site.example.id
+  site_id       = data.nightlight_site.east.id
   instance_type = "virtualmachine"
   cdroms = [
     {
@@ -71,19 +71,19 @@ resource "nightlight_instance" "vme" {
     {
       index_number = 0
       boot_order   = 3
-      bridge_name  = data.nightlight_site.example.bridges[0]
+      bridge_name  = data.nightlight_site.east.bridges[0]
       subnet_id    = data.nightlight_subnet.management.id
       model        = "e1000"
       connected    = true
+    },
+    {
+      index_number = 1
+      boot_order   = 5
+      bridge_name  = data.nightlight_site.east.bridges[0]
+      subnet_id    = data.nightlight_subnet.compute.id
+      model        = "e1000"
+      connected    = true
     }
-    # {
-    #   index_number = 1
-    #   boot_order   = 5
-    #   bridge_name  = data.nightlight_site.example.bridges[0]
-    #   subnet_id    = data.nightlight_subnet.compute.id
-    #   model        = "virtio"
-    #   connected    = true
-    # }
   ]
   # Define the connection parameters for the provisioner
   connection {
