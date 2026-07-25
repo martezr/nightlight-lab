@@ -31,7 +31,7 @@ resource "hpe_morpheus_cloud" "example" {
 
 data "hpe_morpheus_cluster_type" "hvmcluster" {
   name = "HVM"
-  depends_on = [ nightlight_instance.vme ]
+  depends_on = [ nightlight_instance.vme, nightlight_instance.vme_cluster_nodes ]
 }
 
 resource "hpe_morpheus_cluster" "example_hvm" {
@@ -58,12 +58,18 @@ resource "hpe_morpheus_cluster" "example_hvm" {
     ssh_password_wo          = "Password123#"
     management_net_interface = "ens1"    
 
-    ssh_hosts = [
-      {
-        name = "vme01"
-        ip   = nightlight_instance.vme.primary_ip_address
-      }
-    ]
+    ssh_hosts = concat(
+      [
+        {
+          name = "vme01"
+          ip   = nightlight_instance.vme.primary_ip_address
+        }
+      ],
+      [for node in nightlight_instance.vme_cluster_nodes : {
+        name = node.name
+        ip   = node.primary_ip_address
+      }]
+    )
     visibility = "private"
   }
   depends_on = [ nightlight_instance.vme ]

@@ -39,7 +39,7 @@ resource "nightlight_instance" "vme" {
   description  = "HPE Morpheus VM Essentials"
   cpu_cores    = 8
   cpu_sockets  = 2
-  memory_mb    = 98304
+  memory_mb    = 32768
   datastore_id = "defaultdatastore"
   user_data = templatefile("${path.module}/userdata.sh", {
     hostname = "vme01"
@@ -60,7 +60,7 @@ resource "nightlight_instance" "vme" {
     {
       index_number  = 0
       boot_order    = 1
-      size_gb       = 250
+      size_gb       = 80
       bus_type      = "virtio"
       datastore_id  = "defaultdatastore"
       existing_path = data.nightlight_image.ubuntu24.path
@@ -111,4 +111,49 @@ resource "nightlight_instance" "vme" {
       "sudo chmod +x /home/mreed/bootstrap.sh && sudo /home/mreed/bootstrap.sh ${local.vme_images[local.vme_version].qcow2}"
     ]
   }
+}
+
+resource "nightlight_instance" "vme_cluster_nodes" {
+  count        = 2
+  name         = "vme0${count.index + 2}"
+  description  = "HPE Morpheus VM Essentials"
+  cpu_cores    = 8
+  cpu_sockets  = 2
+  memory_mb    = 32768
+  datastore_id = "defaultdatastore"
+  user_data = templatefile("${path.module}/userdata.sh", {
+    hostname = "vme0${count.index + 2}"
+    fqdn     = "vme0${count.index + 2}.rmslab.net"
+  })
+  site_id       = data.nightlight_site.east.id
+  instance_type = "virtualmachine"
+  storage_disks = [
+    {
+      index_number  = 0
+      boot_order    = 1
+      size_gb       = 80
+      bus_type      = "virtio"
+      datastore_id  = "defaultdatastore"
+      existing_path = data.nightlight_image.ubuntu24.path
+    }
+  ]
+
+  network_interfaces = [
+    {
+      index_number = 0
+      boot_order   = 2
+      bridge_name  = data.nightlight_site.east.bridges[0]
+      subnet_id    = data.nightlight_subnet.management.id
+      model        = "e1000"
+      connected    = true
+    },
+    {
+      index_number = 1
+      boot_order   = 3
+      bridge_name  = data.nightlight_site.east.bridges[0]
+      subnet_id    = data.nightlight_subnet.compute.id
+      model        = "e1000"
+      connected    = true
+    }
+  ]
 }
