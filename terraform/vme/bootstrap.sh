@@ -60,7 +60,7 @@ while (( ATTEMPT <= MAX_ATTEMPTS )); do
         echo "Validating credentials against $AUTH_URL..."
 
         while (( AUTH_ATTEMPT <= AUTH_MAX_ATTEMPTS )); do
-            HTTP_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" -X POST "$AUTH_URL" \
+            HTTP_STATUS=$(curl -k -s -o /dev/null -w "%%{http_code}" -X POST "$AUTH_URL" \
                 -d "grant_type=password" \
                 -d "client_id=morph-api" \
                 -d "username=rmadmin" \
