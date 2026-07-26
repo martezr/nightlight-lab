@@ -46,8 +46,39 @@ while (( ATTEMPT <= MAX_ATTEMPTS )); do
         "password": "Password123#"
         }
         '
+
+
+        # Wait for auth service to initialize before validating credentials
         sleep 30
-        exit 0
+
+        # Poll OAuth endpoint until credentials are accepted
+        AUTH_URL="https://192.168.128.243/oauth/token"
+        AUTH_MAX_ATTEMPTS=20
+        AUTH_SLEEP_SECONDS=15
+        AUTH_ATTEMPT=1
+
+        echo "Validating credentials against $AUTH_URL..."
+
+        while (( AUTH_ATTEMPT <= AUTH_MAX_ATTEMPTS )); do
+            HTTP_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" -X POST "$AUTH_URL" \
+                -d "grant_type=password" \
+                -d "client_id=morph-api" \
+                -d "username=rmadmin" \
+                -d "password=Password123#" \
+                -d "scope=write")
+
+            if [[ "$HTTP_STATUS" == "200" ]]; then
+                echo "Authentication successful (HTTP $HTTP_STATUS). Credentials are valid."
+                exit 0
+            else
+                echo "Auth attempt $AUTH_ATTEMPT/$AUTH_MAX_ATTEMPTS: received HTTP $HTTP_STATUS. Retrying in $AUTH_SLEEP_SECONDS seconds..."
+                sleep $AUTH_SLEEP_SECONDS
+                ((AUTH_ATTEMPT++))
+            fi
+        done
+
+        echo "ERROR: Authentication failed after $((AUTH_MAX_ATTEMPTS * AUTH_SLEEP_SECONDS)) seconds."
+        exit 1
     else
         echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: $URL not responding yet. Retrying in $SLEEP_SECONDS seconds..."
         sleep $SLEEP_SECONDS
