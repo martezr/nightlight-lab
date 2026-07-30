@@ -80,9 +80,9 @@ resource "nightlight_instance" "vme" {
       index_number = 1
       boot_order   = 4
       bridge_name  = data.nightlight_site.east.bridges[0]
-      subnet_id    = data.nightlight_subnet.compute.id
       model        = "e1000"
       connected    = true
+      trunk = true
     }
   ]
   # Define the connection parameters for the provisioner
@@ -151,9 +151,9 @@ resource "nightlight_instance" "vme_cluster_nodes" {
       index_number = 1
       boot_order   = 3
       bridge_name  = data.nightlight_site.east.bridges[0]
-      subnet_id    = data.nightlight_subnet.compute.id
       model        = "e1000"
       connected    = true
+      trunk = true
     }
   ]
 }
